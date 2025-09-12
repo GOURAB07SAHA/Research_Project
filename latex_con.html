@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en" class=""> <!-- 'dark' class will be toggled here -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced LaTeX Renderer</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for class-based dark mode (must be after loading tailwind) -->
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+      }
+    </script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for LaTeX rendering -->
+    <script>
+    MathJax = {
+      tex: {
+        // Load more packages to support a wider range of commands
+        packages: {'[+]': ['ams', 'color', 'boldsymbol', 'newcommand', 'mhchem', 'cancel']},
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      svg: {
+        fontCache: 'global'
+      },
+      startup: {
+        ready: () => {
+          console.log('MathJax is ready.');
+          MathJax.startup.defaultReady();
+          // Trigger the initial render once MathJax is fully loaded and ready.
+          initialRender();
+        }
+      }
+    };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
+    
+    <style>
+        /* Use Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for the output area to resemble a paper */
+        #output {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.6;
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        .dark ::-webkit-scrollbar-track { background: #2d3748; }
+        .dark ::-webkit-scrollbar-thumb { background: #4a5568; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #718096; }
+
+        /* Loader animation */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+
+    <div class="container mx-auto p-4 lg:p-6">
+
+        <!-- Header Section -->
+        <header class="flex justify-between items-center mb-6">
+            <div class="text-left">
+                 <h1 class="text-3xl lg:text-4xl font-bold text-gray-800 dark:text-white">Interactive LaTeX Renderer</h1>
+                 <p class="text-md lg:text-lg text-gray-500 dark:text-gray-400 mt-1">Live preview for your mathematical and scientific notations.</p>
+            </div>
+            <!-- Theme Toggle Button -->
+            <button id="theme-toggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900">
+                <!-- Sun Icon for Light Mode -->
+                <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                <!-- Moon Icon for Dark Mode -->
+                <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            </button>
+        </header>
+
+        <!-- Main Content: Input and Output panels -->
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[70vh]">
+
+            <!-- Input Panel -->
+            <div class="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+                <div class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 p-3 flex justify-between items-center border-b border-gray-300 dark:border-gray-600">
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536l12.232-12.232z" /></svg>
+                        <h2 class="text-lg font-semibold">LaTeX Input</h2>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="copy-btn" class="flex items-center px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-md transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 A0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            <span id="copy-btn-text">Copy</span>
+                        </button>
+                        <button id="clear-btn" class="flex items-center px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-md transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            <span>Clear</span>
+                        </button>
+                    </div>
+                </div>
+                <textarea id="latex-input" class="w-full h-full p-4 border-0 resize-none focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 font-mono text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200" placeholder="Paste your LaTeX code here... e.g., $$x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}$$"></textarea>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+                 <div class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 p-3 flex items-center border-b border-gray-300 dark:border-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    <h2 class="text-lg font-semibold">Rendered Output</h2>
+                </div>
+                <div id="output-container" class="p-6 overflow-y-auto h-full relative">
+                    <div id="loader" class="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 bg-opacity-75 dark:bg-opacity-75 z-10" style="display: none;">
+                        <div class="loader"></div>
+                    </div>
+                    <div id="output" class="text-gray-900 dark:text-gray-100">
+                        Your rendered LaTeX will appear here.
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- Global variables and functions ---
+        let renderTimeout;
+
+        // Core Rendering Function
+        const renderLatex = () => {
+            // Check if MathJax and its startup property are available to prevent errors
+            if (!window.MathJax || !window.MathJax.startup) {
+                console.warn("MathJax is not ready yet.");
+                return;
+            }
+            
+            const inputElement = document.getElementById('latex-input');
+            const outputElement = document.getElementById('output');
+            const loader = document.getElementById('loader');
+            
+            loader.style.display = 'flex';
+            
+            // Get the raw LaTeX input
+            const rawLatex = inputElement.value;
+            
+            // Set the content directly. MathJax will handle the formatting.
+            // This avoids corrupting the LaTeX with <br> tags.
+            outputElement.textContent = rawLatex;
+            
+            MathJax.startup.promise.then(() => {
+                MathJax.typesetPromise([outputElement])
+                    .catch((err) => {
+                        console.error('MathJax rendering error:', err);
+                        outputElement.innerHTML = `<span class="text-red-500">Error rendering LaTeX. Check console for details.</span>`;
+                    })
+                    .finally(() => {
+                        loader.style.display = 'none';
+                    });
+            }).catch(err => {
+                 console.error("MathJax startup promise failed:", err);
+                 loader.style.display = 'none';
+            });
+        };
+
+        // Theme Management
+        const applyTheme = (theme) => {
+            const htmlEl = document.documentElement;
+            const themeIconLight = document.getElementById('theme-icon-light');
+            const themeIconDark = document.getElementById('theme-icon-dark');
+            
+            if (theme === 'dark') {
+                htmlEl.classList.add('dark');
+                themeIconLight.classList.add('hidden');
+                themeIconDark.classList.remove('hidden');
+            } else {
+                htmlEl.classList.remove('dark');
+                themeIconLight.classList.remove('hidden');
+                themeIconDark.classList.add('hidden');
+            }
+        };
+
+        // Function for the first render, called by MathJax when it's ready
+        const initialRender = () => {
+            const inputElement = document.getElementById('latex-input');
+            // Using concatenated strings to avoid potential template literal parsing issues.
+            inputElement.value =
+                '% --- Standard Examples ---\n' +
+                '% The Quadratic Formula\n' +
+                '$$x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$\n\n' +
+                '% A 2x2 matrix\n' +
+                '$$\n' +
+                '\\begin{pmatrix}\n' +
+                'a & b \\\\\n' +
+                'c & d\n' +
+                '\\end{pmatrix}\n' +
+                '$$\n\n' +
+                '% --- New Examples with Added Packages ---\n' +
+                '% Colored text (using the \'color\' package)\n' +
+                '$${\\color{blue} y = f(x)}$$\n\n' +
+                '% Chemical equation (using the \'mhchem\' package)\n' +
+                '$$\\ce{H2O + CO2 <=> H2CO3}$$\n\n' +
+                '% Canceled terms (using the \'cancel\' package)\n' +
+                '$$m = \\frac{\\cancel{m_0}}{\\sqrt{1-\\frac{v^2}{c^2}}}$$\n\n' +
+                '% Now, try your own advanced LaTeX code!';
+            renderLatex();
+        };
+
+
+        // --- Wait for the DOM to be fully loaded before running setup code ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Get DOM Elements
+            const inputElement = document.getElementById('latex-input');
+            const themeToggle = document.getElementById('theme-toggle');
+            const clearButton = document.getElementById('clear-btn');
+            const copyButton = document.getElementById('copy-btn');
+            const copyBtnText = document.getElementById('copy-btn-text');
+
+            // --- Theme Setup ---
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+
+            // --- Event Listeners ---
+            themeToggle.addEventListener('click', () => {
+                const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+
+            inputElement.addEventListener('input', () => {
+                clearTimeout(renderTimeout);
+                renderTimeout = setTimeout(renderLatex, 300); // 300ms debounce
+            });
+
+            clearButton.addEventListener('click', () => {
+                inputElement.value = '';
+                renderLatex();
+                inputElement.focus();
+            });
+
+            copyButton.addEventListener('click', () => {
+                if (!inputElement.value) return;
+                const textAreaForCopy = document.createElement("textarea");
+                textAreaForCopy.value = inputElement.value;
+                document.body.appendChild(textAreaForCopy);
+                textAreaForCopy.select();
+                try {
+                    document.execCommand('copy');
+                    copyBtnText.textContent = 'Copied!';
+                    setTimeout(() => { copyBtnText.textContent = 'Copy'; }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    copyBtnText.textContent = 'Failed!';
+                    setTimeout(() => { copyBtnText.textContent = 'Copy'; }, 2000);
+                }
+                document.body.removeChild(textAreaForCopy);
+            });
+        });
+    </script>
+
+</body>
+</html>
+
+
